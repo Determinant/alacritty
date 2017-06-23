@@ -18,6 +18,7 @@ use std::sync::{Mutex, Arc};
 
 use gl;
 use glutin::{self, EventsLoop};
+use libc;
 
 /// Window errors
 #[derive(Debug)]
@@ -183,6 +184,17 @@ impl Window {
         title: &str
     ) -> Result<Window> {
         let event_loop = EventsLoop::new();
+        /// Set up env to make XIM work correctly
+        use x11_dl::xlib;
+        //let nspot = xlib::XPoint{x: 1, y: 1};
+        let xlib = xlib::Xlib::open().expect("get xlib");
+        unsafe {
+            // using empty c string to fallback to LC_CTYPE in environment variables
+            libc::setlocale(libc::LC_CTYPE, b"\0".as_ptr() as *const _);
+            // using empty c string for implementation dependent behavior,
+            // which might be the XMODIFIERS set in env
+            (xlib.XSetLocaleModifiers)(b"\0".as_ptr() as *const _);
+        }
         /// Create a glutin::Window
         let mut window = glutin::WindowBuilder::new()
             // .with_vsync()
